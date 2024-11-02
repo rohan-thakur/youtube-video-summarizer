@@ -1,44 +1,43 @@
 import streamlit as st
 from urllib.parse import urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi as y
-from llama_index.core.llms import ChatMessage
-from llama_index.llms.ollama import Ollama
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+# from llama_index.core.llms import ChatMessage
+# from llama_index.llms.ollama import Ollama
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
 import ollama
 
-def chunk_text(text, chunk_size=500, chunk_overlap=50):
-    """Splits text into smaller chunks."""
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
-    )
-    chunks = text_splitter.split_text(text)
-    return chunks
+# def chunk_text(text, chunk_size=500, chunk_overlap=50):
+#     """Splits text into smaller chunks."""
+#     text_splitter = RecursiveCharacterTextSplitter(
+#         chunk_size=chunk_size,
+#         chunk_overlap=chunk_overlap
+#     )
+#     chunks = text_splitter.split_text(text)
+#     return chunks
 
-def summarize_chunk(chunk, model="llama3"):
-    """Summarizes a single chunk of text using Ollama."""
-    response = ollama.chat(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that summarizes text."
-            },
-            {
-                "role": "user",
-                "content": f"Please summarize this text:\n{chunk}"
-            }
-        ]
-    )
-    return response["message"]["content"]
+# def summarize_chunk(chunk, model="llama3"):
+#     """Summarizes a single chunk of text using Ollama."""
+#     response = ollama.chat(
+#         model=model,
+#         messages=[
+#             {
+#                 "role": "system",
+#                 "content": "You are a helpful assistant that summarizes text."
+#             },
+#             {
+#                 "role": "user",
+#                 "content": f"Please summarize this text:\n{chunk}"
+#             }
+#         ]
+#     )
+#     return response["message"]["content"]
 
-def summarize_large_string(text, model="llama3"):
-    """Summarizes a large string by chunking and summarizing each chunk."""
-    chunks = chunk_text(text)
-    summaries = [summarize_chunk(chunk, model) for chunk in chunks]
-    final_summary = "\n".join(summaries)
-    return final_summary
-
+# def summarize_large_string(text, model="llama3"):
+#     """Summarizes a large string by chunking and summarizing each chunk."""
+#     chunks = chunk_text(text)
+#     summaries = [summarize_chunk(chunk, model) for chunk in chunks]
+#     final_summary = "\n".join(summaries)
+#     return final_summary
 
 
 # Function to extract video ID from YouTube URL
