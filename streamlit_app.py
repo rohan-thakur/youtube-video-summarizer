@@ -6,40 +6,6 @@ from youtube_transcript_api import YouTubeTranscriptApi as y
 # from langchain.text_splitter import RecursiveCharacterTextSplitter
 import ollama
 
-# def chunk_text(text, chunk_size=500, chunk_overlap=50):
-#     """Splits text into smaller chunks."""
-#     text_splitter = RecursiveCharacterTextSplitter(
-#         chunk_size=chunk_size,
-#         chunk_overlap=chunk_overlap
-#     )
-#     chunks = text_splitter.split_text(text)
-#     return chunks
-
-# def summarize_chunk(chunk, model="llama3"):
-#     """Summarizes a single chunk of text using Ollama."""
-#     response = ollama.chat(
-#         model=model,
-#         messages=[
-#             {
-#                 "role": "system",
-#                 "content": "You are a helpful assistant that summarizes text."
-#             },
-#             {
-#                 "role": "user",
-#                 "content": f"Please summarize this text:\n{chunk}"
-#             }
-#         ]
-#     )
-#     return response["message"]["content"]
-
-# def summarize_large_string(text, model="llama3"):
-#     """Summarizes a large string by chunking and summarizing each chunk."""
-#     chunks = chunk_text(text)
-#     summaries = [summarize_chunk(chunk, model) for chunk in chunks]
-#     final_summary = "\n".join(summaries)
-#     return final_summary
-
-
 # Function to extract video ID from YouTube URL
 def get_video_id(youtube_url):
     url_components = urlparse(youtube_url)
@@ -50,16 +16,40 @@ def get_video_id(youtube_url):
     return None
 
 # Function to get transcript as a single string
-def get_transcript_text(video_id):
-    try:
+def get_transcript_text(video_id, translate_language):
+    print(translate_language)
+    # try:
+    if translate_language:
+        transcript_list = y.list_transcripts(video_id)
+        for t in transcript_list:
+            print(f'language code is {t.language_code}, is translatable {t.is_translatable}')
+            if t.language_code=='en':
+                transcript=t.translate(translate_language).fetch()
+                print("I did the translation")
+                print(transcript)
+            else:
+                continue
+
+        # transcript = y.get_transcript(video_id)
+        # print(type(transcript))
+        # transcript = [t.translate(translate_language).fetch() for t in transcript]
+        # print(transcript)
+    else:
         transcript = y.get_transcript(video_id)
-        return " ".join([snippet['text'] for snippet in transcript])
-    except Exception as e:
-        st.error("Could not retrieve transcript. The video may not have subtitles.")
-        return None
+        print("I did no translation")
+    return " ".join([snippet['text'] for snippet in transcript])
+    # except Exception as e:
+    #     st.error("Could not retrieve transcript. The video may not have subtitles.")
+    #     return None
+
+def get_transcript_languages(video_id):
+    transcript_list = y.list_transcripts(video_id)
+    # return [t['language'] for t in transcript_list._translation_languages]
+    return transcript_list._translation_languages
 
 # Function to summarize text using Ollama's LLaMA model
 def summarize_text(text, prompt):
+    print(f'llama has been given this text {text}')
     response = ollama.chat(
         model='llama3',
         messages=[
@@ -84,11 +74,15 @@ prompt = st.text_input("Provide a prompt regarding what you are looking for.")
 if youtube_url:
     print("Getting video_id")
     video_id = get_video_id(youtube_url)
+
+    selected_language = st.selectbox("What language would you like the summary in?", get_transcript_languages(video_id))['language_code']
+    print(selected_language)
     if video_id:
         print("Getting Transcript")
-        transcript = get_transcript_text(video_id)
+        transcript = get_transcript_text(video_id, selected_language)
         if transcript:
             with st.spinner("Generating summary..."):
+                print(transcript)
                 summary = summarize_text(transcript, prompt)
                 #summary = summarize_large_string(transcript)
                 st.write(summary)
