@@ -48,7 +48,7 @@ def summarize_text(text, prompt):
         response = ollama.chat(
             model='llama3',
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes text."},
+                {"role": "system", "content": "You are a helpful assistant that summarizes text based on a user query."},
                 {"role": "user", "content": f"{prompt}:\n{text}"}
             ]
         )
