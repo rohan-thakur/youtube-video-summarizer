@@ -42,7 +42,7 @@ def get_transcript_text(transcripts, translate_language=None):
         print(f"Error: {e}")
     return None
 
-# Function to summarize text using Ollama's LLaMA model
+# Function to summarize text using Meta Llama 3.1 8B
 def summarize_text(text, prompt):
     try:
         response = ollama.chat(
