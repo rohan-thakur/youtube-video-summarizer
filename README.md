@@ -1,4 +1,4 @@
-# 💬 Chatbot template
+# 💬 youtube-video-summarizer
 
 A simple Streamlit app that summarizes a youtube video transcript given a user query.
 
