@@ -12,14 +12,36 @@ def get_video_id(youtube_url):
         return url_components.path[1:]
     return None
 
-# Function to get available transcripts and languages for translation
+# Function to get available transcripts and specific languages for translation
 def get_transcripts_and_languages(video_id):
     try:
+        # Fetch the list of transcripts for the video
         transcript_list = y.list_transcripts(video_id)
         transcripts = {transcript.language_code: transcript for transcript in transcript_list}
-        available_languages = [{"name": lang['language'], "code": lang['language_code']}
-                               for lang in transcript_list._translation_languages]
+
+        # Define the list of supported languages for Llama 3.1
+        supported_languages = [
+            {"name": "English", "code": "en"},
+            {"name": "French", "code": "fr"},
+            {"name": "German", "code": "de"},
+            {"name": "Hindi", "code": "hi"},
+            {"name": "Italian", "code": "it"},
+            {"name": "Portuguese", "code": "pt"},
+            {"name": "Spanish", "code": "es"},
+            {"name": "Thai", "code": "th"}
+        ]
+
+        # Get the list of available translation languages
+        translation_languages = {lang['language_code'] for lang in transcript_list._translation_languages}
+
+        # Filter supported languages based on available transcripts or translatable languages
+        available_languages = [
+            lang for lang in supported_languages
+            if lang["code"] in transcripts or lang["code"] in translation_languages
+        ]
+
         return transcripts, available_languages
+
     except Exception as e:
         st.error("Error retrieving transcript or languages.")
         print(f"Error: {e}")
