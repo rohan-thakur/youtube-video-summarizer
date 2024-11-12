@@ -3,3 +3,4 @@ langchain
 ollama
 youtube_transcript_api
 llama_index
+groq

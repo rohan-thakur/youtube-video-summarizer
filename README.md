@@ -1,17 +1,23 @@
-# 💬 youtube-video-summarizer
 
-A simple Streamlit app that summarizes a youtube video transcript given a user query.
+# YouTube Video Summarizer
 
-### How to run it on your own machine
+A simple Streamlit app that summarizes a YouTube video transcript based on a user query.
 
-1. Install the requirements
+### How to Run on Your Own Machine
 
+1. **Install the Requirements**
+
+   ```bash
+   pip install -r requirements.txt
    ```
-   $ pip install -r requirements.txt
-   ```
 
-2. Run the app
+2. **Configure Groq**
 
-   ```
-   $ streamlit run streamlit_app.py
+   - Create an account and generate an API key at [Groq Console](https://console.groq.com/keys).
+   - Set the environment variable `GROQ_API_KEY`.
+
+3. **Run the App**
+
+   ```bash
+   streamlit run streamlit_app.py
    ```

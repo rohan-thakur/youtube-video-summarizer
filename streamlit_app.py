@@ -1,7 +1,11 @@
 import streamlit as st
 from urllib.parse import urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi as y
-import ollama
+import os
+from groq import Groq
+
+# Set up the Groq client
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # Function to extract video ID from YouTube URL
 def get_video_id(youtube_url):
@@ -17,6 +21,12 @@ def get_transcripts_and_languages(video_id):
     try:
         # Fetch the list of transcripts for the video
         transcript_list = y.list_transcripts(video_id)
+        
+        # Check if transcripts are available
+        if not transcript_list:
+            st.warning("No transcripts found for this video.")
+            return {}, []
+
         transcripts = {transcript.language_code: transcript for transcript in transcript_list}
 
         # Define the list of supported languages for Llama 3.1
@@ -39,6 +49,9 @@ def get_transcripts_and_languages(video_id):
             lang for lang in supported_languages
             if lang["code"] in transcripts or lang["code"] in translation_languages
         ]
+
+        if not available_languages:
+            st.warning("No translatable languages found for this video.")
 
         return transcripts, available_languages
 
@@ -67,14 +80,17 @@ def get_transcript_text(transcripts, translate_language=None):
 # Function to summarize text using Meta Llama 3.1 8B
 def summarize_text(text, prompt):
     try:
-        response = ollama.chat(
-            model='llama3.1',
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that summarizes text based on a user query."},
-                {"role": "user", "content": f"{prompt}:\n{text}"}
-            ]
+        chat_history = [
+            {"role": "system", "content": "You are a helpful assistant that summarizes text based on a user query."},
+            {"role": "user", "content": f"{prompt}:\n{text}"}
+        ]
+        response = client.chat.completions.create(
+            model="llama-3.2-90b-vision-preview",
+            messages=chat_history,
+            max_tokens=100,
+            temperature=1.2
         )
-        return response["message"]["content"]
+        return response.choices[0].message.content
     except Exception as e:
         st.error("Error in generating summary.")
         print(f"Error: {e}")
