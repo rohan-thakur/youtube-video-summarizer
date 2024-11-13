@@ -87,7 +87,7 @@ def summarize_text(text, prompt):
         response = client.chat.completions.create(
             model="llama-3.2-90b-vision-preview",
             messages=chat_history,
-            max_tokens=100,
+            max_tokens=8192,
             temperature=1.2
         )
         return response.choices[0].message.content
