@@ -12,63 +12,48 @@ def get_video_id(youtube_url):
         return url_components.path[1:]
     return None
 
-# Function to get available transcripts and specific languages for translation
-def get_transcripts_and_languages(video_id):
+# Function to get available transcripts and filter supported languages
+def get_transcripts(video_id):
     try:
-        # Fetch the list of transcripts for the video
         transcript_list = y.list_transcripts(video_id)
         transcripts = {transcript.language_code: transcript for transcript in transcript_list}
 
-        # Define the list of supported languages for Llama 3.1
-        supported_languages = [
-            {"name": "English", "code": "en"},
-            {"name": "French", "code": "fr"},
-            {"name": "German", "code": "de"},
-            {"name": "Hindi", "code": "hi"},
-            {"name": "Italian", "code": "it"},
-            {"name": "Portuguese", "code": "pt"},
-            {"name": "Spanish", "code": "es"},
-            {"name": "Thai", "code": "th"}
-        ]
+        # Define supported languages for LLaMA 3.2
+        supported_languages = {
+            "en": "English", "fr": "French", "de": "German", "hi": "Hindi",
+            "it": "Italian", "pt": "Portuguese", "es": "Spanish", "th": "Thai"
+        }
 
-        # Get the list of available translation languages
-        translation_languages = {lang['language_code'] for lang in transcript_list._translation_languages}
-
-        # Filter supported languages based on available transcripts or translatable languages
-        available_languages = [
-            lang for lang in supported_languages
-            if lang["code"] in transcripts or lang["code"] in translation_languages
-        ]
-
+        # Check which supported languages have available transcripts or translations
+        available_languages = {
+            code: name for code, name in supported_languages.items()
+            if code in transcripts or code in transcript_list._translation_languages
+        }
         return transcripts, available_languages
-
     except Exception as e:
         st.error("Error retrieving transcript or languages.")
         print(f"Error: {e}")
-        return {}, []
+        return {}, {}
 
 # Function to get transcript text, with optional translation
-def get_transcript_text(transcripts, translate_language=None):
+def get_transcript_text(transcripts, language_code):
     try:
-        transcript = transcripts.get('en')  # Default to English if available
+        transcript = transcripts.get(language_code, transcripts.get("en"))  # Default to English if available
         if transcript:
-            if translate_language:
-                transcript = transcript.translate(translate_language).fetch()
-            else:
-                transcript = transcript.fetch()
+            transcript = transcript.fetch()
             return " ".join([snippet['text'] for snippet in transcript])
         else:
-            st.warning("No English transcript available.")
+            st.warning("Transcript not available in the selected language.")
     except Exception as e:
         st.error("Could not retrieve transcript text.")
         print(f"Error: {e}")
     return None
 
-# Function to summarize text using Meta Llama 3.1 8B
+# Function to summarize text using LLaMA 3.2
 def summarize_text(text, prompt):
     try:
         response = ollama.chat(
-            model='llama3.1',
+            model='llama3.2',
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that summarizes text based on a user query."},
                 {"role": "user", "content": f"{prompt}:\n{text}"}
@@ -83,47 +68,50 @@ def summarize_text(text, prompt):
 # Streamlit app setup
 st.title("YouTube Video Summarizer")
 
-# Step 1: Enter URL
-with st.container():
-    st.subheader("Step 1: Enter YouTube Video URL")
-    youtube_url = st.text_input("Enter the video URL here")
+# Form to group all steps
+with st.form("summary_form"):
+    st.subheader("Complete the steps below and hit 'Submit' when ready")
 
-# Proceed if URL is provided
-if youtube_url:
-    video_id = get_video_id(youtube_url)
-    if video_id:
-        # Step 2: Provide Prompt
-        with st.container():
-            st.subheader("Step 2: Enter Query Prompt")
-            prompt = st.text_input("Describe what you’re looking for in the summary (e.g., main points, key takeaways)")
+    # Step 1: Enter URL
+    youtube_url = st.text_input("Enter YouTube Video URL")
 
-        # Proceed if prompt is provided
-        if prompt:
-            # Step 3: Select Language
-            with st.container():
-                st.subheader("Step 3: Select Language for Summary")
-                transcripts, available_languages = get_transcripts_and_languages(video_id)
-                if available_languages:
-                    selected_language = st.selectbox(
-                        "Choose language",
-                        options=available_languages,
-                        format_func=lambda lang: lang['name']
-                    )
-                    language_code = selected_language['code']
+    # Step 2: Ask Questions
+    prompt = st.text_input("What would you like to know about the video? (Ask questions or describe desired insights)")
 
-                    # Step 4: Generate Summary
-                    transcript = get_transcript_text(transcripts, language_code)
-                    if transcript:
-                        with st.spinner("Generating summary..."):
-                            summary = summarize_text(transcript, prompt)
-                            if summary:
-                                st.success("Summary generated successfully!")
-                                st.write(summary)
-                            else:
-                                st.error("Failed to generate summary.")
-                    else:
-                        st.warning("Unable to retrieve transcript. Try another video or check subtitle availability.")
+    # Step 3: Select Language
+    supported_languages = {
+        "en": "English", "fr": "French", "de": "German", "hi": "Hindi",
+        "it": "Italian", "pt": "Portuguese", "es": "Spanish", "th": "Thai"
+    }
+    selected_language = st.selectbox("Choose language for summary", options=supported_languages.keys(),
+                                     format_func=lambda code: supported_languages[code])
+    
+    # Submit button
+    submitted = st.form_submit_button("Submit")
+
+# Once the form is submitted, process the input
+if submitted:
+    if youtube_url and prompt:
+        video_id = get_video_id(youtube_url)
+        if video_id:
+            transcripts, available_languages = get_transcripts(video_id)
+            if selected_language in available_languages:
+                transcript = get_transcript_text(transcripts, selected_language)
+                if transcript:
+                    with st.spinner("Generating summary..."):
+                        summary = summarize_text(transcript, prompt)
+                        if summary:
+                            st.success("Summary generated successfully!")
+                            # Embed YouTube video above the summary
+                            st.video(f"https://www.youtube.com/watch?v={video_id}")
+                            st.write(summary)
+                        else:
+                            st.error("Failed to generate summary.")
                 else:
-                    st.warning("No translatable languages found.")
+                    st.warning("Unable to retrieve transcript. Try another video or check subtitle availability.")
+            else:
+                st.warning("Selected language not available for this video.")
+        else:
+            st.error("Invalid YouTube URL. Please check and try again.")
     else:
-        st.error("Invalid YouTube URL. Please check and try again.")
+        st.error("Please complete all steps before submitting.")
