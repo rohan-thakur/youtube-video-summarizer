@@ -13,5 +13,5 @@ A simple Streamlit app that summarizes a youtube video transcript given a user q
 2. Run the app
 
    ```
-   streamlit run streamlit_app.py
+   ollama serve & streamlit run streamlit_app.py
    ```
