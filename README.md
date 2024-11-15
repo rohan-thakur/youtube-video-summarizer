@@ -5,9 +5,7 @@ A simple Streamlit app that summarizes a YouTube video transcript based on a use
 
 ### How to Run on Your Own Machine
 
-1. **Install the Requirements**
-
-   ```bash
+   ```
    pip install -r requirements.txt
    ```
 
